@@ -36,32 +36,26 @@
 
 (use-package eglot
   :defer t
-  ;; The hook ensures that `eglot` tries to start whenever you open a C or C++ file.
   :hook ((c++-mode . eglot-ensure)
          (c-mode   . eglot-ensure))
+  ;; The :config block runs *after* the package has been loaded.
+  ;; This is the correct place to modify variables defined by eglot.
   :config
-  (message "Eglot is configured for C/C++ modes."))
+  ;; Add support for cmake-language-server in cmake-mode.
+  (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server")))
+  (message "Eglot is configured for C/C++ and CMake."))
 
 (use-package company
   :defer t
   :hook (after-init . global-company-mode)
   :config
-  ;; Set company-idle-delay to 0.2 seconds
   (setq company-idle-delay 0.2)
-  ;; Number of chars to type before completion shows
   (setq company-minimum-prefix-length 2)
-  ;; `company-capf` is the "magic" backend that allows company-mode to get
-  ;; completion candidates from whatever `completion-at-point-function` is active.
-  ;; Eglot sets this function, so this is how they connect.
   (setq company-backends '(company-capf)))
 
 (use-package cmake-mode
   :defer t
   :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'"))
-
-;; Add eglot support for CMake files (requires `cmake-language-server`)
-(add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server")))
-
 
 ;; Custom function for code formatting using clang-format
 (defun my-cpp-format-buffer ()
@@ -73,7 +67,6 @@
       (message "Formatted buffer with clang-format."))))
 
 ;; Hook to format the code automatically right before you save a file.
-;; This is a huge productivity booster and ensures consistent style.
 (defun my-cpp-auto-format-on-save ()
   "Enable auto-formatting on save for C/C++ modes."
   (add-hook 'before-save-hook #'my-cpp-format-buffer nil 'local))
@@ -92,8 +85,6 @@
   :hook ((emacs-lisp-mode . enable-paredit-mode)
          (lisp-mode       . enable-paredit-mode)
          (scheme-mode     . enable-paredit-mode)))
-
-;; (Other packages like SLIME, Markdown, etc., would go here)
 
 
 ;;;; --- 7. Custom Variables and Faces ---

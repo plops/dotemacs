@@ -1,35 +1,17 @@
 ;; -*- lexical-binding: t -*-
 
-;;;; --- 1. Package Management with straight.el ---
-;; This section bootstraps straight.el, a modern, git-based package manager.
-;; It replaces the traditional package.el setup. Make sure Git is installed.
+;;;; --- 1. Package Management ---
+(require 'package)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("gnu"   . "https://elpa.gnu.org/packages/")))
+(package-initialize)
 
-;; Prevent package.el from loading its packages at startup (for Emacs >= 27).
-(setq package-enable-at-startup nil)
-
-;; Bootstrap straight.el
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el"
-                         (or (bound-and-true-p straight-base-dir)
-                             user-emacs-directory)))
-      (bootstrap-version 7))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-;;;; --- 2. Configure use-package to work with straight.el ---
-;; Ensure use-package itself is installed via straight.el
-(straight-use-package 'use-package)
-
-;; Make all use-package declarations use straight.el by default.
-(setq use-package-always-ensure t) ; For use-package < 2.4.0
-(setq straight-use-package-by-default t) ; For use-package >= 2.4.0
+;;;; --- 2. Bootstrap use-package ---
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure t)
 
 ;;;; --- 3. Performance Tuning ---
 ;; These settings are designed to make Emacs feel faster and more responsive,
@@ -59,63 +41,28 @@
   (setq completion-styles '(orderless basic)
         completion-category-overrides '((file (styles basic partial-completion)))))
 
-;;;; --- 6. C++ Development Environment with lspce ---
-;; NOTE: lspce requires 'f.el' and 'yasnippet'. We ensure they are installed.
-(use-package f)
-(use-package yasnippet)
-
-;; lspce is an LSP client implemented as a dynamic module in Rust.
-;; It requires `cargo` to build its shared library on first install.
-(use-package lspce
-  ;; This special :straight recipe handles cloning and building the Rust module.
-  :straight
-  `(lspce :type git :host github :repo "zbelial/lspce"
-          :files (:defaults ,(pcase system-type
-                               ('gnu/linux "lspce-module.so")
-                               ('darwin "lspce-module.dylib")))
-          :pre-build ,(pcase system-type
-                        ('gnu/linux '(("cargo" "build" "--release")
-                                      ("cp" "./target/release/liblspce_module.so" "./lspce-module.so")))
-                        ('darwin '(("cargo" "build" "--release")
-                                   ("cp" "./target/release/liblspce_module.dylib" "./lspce-module.dylib")))))
-  :hook ((c++-mode . lspce-mode)
-         (c-mode   . lspce-mode)
-         (cmake-mode . lspce-mode))
+;;;; --- 6. C++ Development Environment ---
+(use-package eglot
+  :defer t
+  :hook ((c++-mode . eglot-ensure)
+         (c-mode   . eglot-ensure))
   :config
-  (progn
-    (message "Configuring lspce for C/C++/CMake.")
-    ;; Set a log file for debugging purposes.
-    (lspce-set-log-file "/tmp/lspce.log")
-    (lspce-enable-logging)
+  (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server")))
+  (message "Eglot is configured for C/C++ and CMake."))
 
-    (add-hook 'c++-mode-hook 'lspce-mode)
-    
-    ;; Explicitly define how to get the language type from the major mode.
-    ;; This function is crucial for lspce to know which server to start.
-    (setq lspce-lsp-type-function
-          (lambda ()
-            (cond
-             ((derived-mode-p 'c++-mode) "C++")
-             ((derived-mode-p 'c-mode) "C")
-             ((derived-mode-p 'cmake-mode) "CMake")
-             (t nil))))
-
-    ;; Configure LSP servers. The keys ("C++", "C", "CMake") must now match
-    ;; the strings returned by the function above.
-    (setq lspce-server-programs
-          `(("C++" "clangd" "--all-scopes-completion --clang-tidy --enable-config --header-insertion-decorators=0")
-            ("C" "clangd" "--all-scopes-completion --clang-tidy --enable-config --header-insertion-decorators=0")
-            ("CMake" "cmake-language-server" "")))
-
-    ;; --- COMPLETION SETUP ---
-    ;; Integrate lspce with Emacs's built-in completion system (used by Vertico).
-    (add-to-list 'completion-at-point-functions #'lspce-completion-at-point)))
+(use-package company
+  :defer t
+  :hook (after-init . global-company-mode)
+  :config
+  (setq company-idle-delay 0.2)
+  (setq company-minimum-prefix-length 2)
+  (setq company-backends '(company-capf)))
 
 (use-package cmake-mode
+  :defer t
   :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'"))
 
 ;; Hook to format C/C++ code automatically right before you save a file.
-;; This functionality is independent of the LSP client and remains unchanged.
 (defun my-cpp-auto-format-on-save ()
   "Enable auto-formatting on save for C/C++ modes."
   (add-hook 'before-save-hook #'my-cpp-format-buffer nil 'local))
@@ -134,14 +81,17 @@
 
 ;;;; --- 7. Other Language and Tooling Configuration ---
 (use-package magit
+  :defer t
   :bind ("<f4>" . magit-status))
 
 (use-package paredit
+  :defer t
   :hook ((emacs-lisp-mode . enable-paredit-mode)
          (lisp-mode       . enable-paredit-mode)
          (scheme-mode     . enable-paredit-mode)))
 
 (use-package slime
+  :defer t
   :commands (slime slime-connect)
   :init
   (defun my-slime-tab-and-complete ()
@@ -158,12 +108,14 @@
                ("<tab>" . my-slime-tab-and-complete))))
 
 (use-package markdown-mode
+  :defer t
   :mode ("\\.md\\'" . markdown-mode))
 
 (use-package gptel
+  :defer t
   :commands (gptel gptel-send)
   :config
-  (setq gptel-model "gpt-5-mini"
+  (setq gptel-model "gpt-5-mini" 
         gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 ;;;; --- 8. Miscellaneous Customizations ---
@@ -171,9 +123,13 @@
 (add-to-list 'auto-mode-alist '("\\.ctl\\'" . scheme-mode))
 
 ;;;; --- 9. Custom Variables and Faces (Managed by Emacs) ---
-;; NOTE: The 'package-selected-packages' variable is managed by package.el
-;; and is no longer needed with straight.el. It has been removed.
 (custom-set-faces
  '(default ((t (:family "fixed" :foundry "misc" :slant normal :weight normal :height 98 :width semi-condensed)))))
+
+(custom-set-variables
+ ;; This list is managed by Emacs and contains packages you've installed.
+ ;; use-package handles this automatically, so you don't need to manually edit it.
+ '(package-selected-packages
+   '(cmake-mode company eglot gptel magit markdown-mode orderless paredit savehist slime use-package vertico)))
 
 ;;;; --- End of Emacs Configuration ---

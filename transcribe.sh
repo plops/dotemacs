@@ -16,9 +16,12 @@ usage() {
     echo "Usage: $0 [options] <video_file>"
     echo
     echo "Options:"
-    echo "  -k, --keep        Keep intermediate audio file."
-    echo "  -L, --lang LANG   Language to use (default: auto)."
-    echo "  -h, --help        Display this help message."
+    echo "  -k, --keep            Keep intermediate audio file."
+    echo "  -L, --lang LANG       Language to use (default: auto)."
+    echo "  -h, --help            Display this help message."
+    echo
+    echo "Note: script always requests a VTT intermediate and produces a simplified"
+    echo "      transcript <base>.short.txt with MM:SS (or HH:MM:SS for >=1h)."
     exit 1
 }
 
@@ -86,25 +89,40 @@ fi
 
 # --- 2. Convert Audio to Text with Timestamps ---
 echo "Transcribing audio to text (language: $LANGUAGE)..."
-# The -osrt flag outputs srt; pass the language option from $LANGUAGE.
-# Invoke whisper-cli directly (no eval) and quote args to avoid word-splitting issues.
-"$WHISPER_CLI_PATH" -m "$WHISPER_MODEL_PATH" -l "$LANGUAGE" -osrt -f "$TEMP_AUDIO_FILE" -of "$BASENAME"
+
+# Always request VTT so we can run the simplifier.
+WHISPER_EXTRA_FLAGS=("-ovtt")
+
+# Run whisper-cli once requesting VTT output
+"$WHISPER_CLI_PATH" -m "$WHISPER_MODEL_PATH" -l "$LANGUAGE" "${WHISPER_EXTRA_FLAGS[@]}" -f "$TEMP_AUDIO_FILE" -of "$BASENAME"
 
 if [ $? -ne 0 ]; then
     echo "Error: whisper.cpp failed to transcribe the audio."
     # Clean up the temporary audio file even if transcription fails
     if [ "$KEEP_FILES" = false ]; then
-        rm "$TEMP_AUDIO_FILE"
+        rm -f "$TEMP_AUDIO_FILE"
     fi
     exit 1
 fi
 
-echo "Transcription complete. Output saved to '$OUTPUT_TXT_FILE'"
+VTT_FILE="${PWD}/${BASENAME}.vtt"
+SHORT_TXT_FILE="${PWD}/${BASENAME}.short.txt"
 
-# --- 3. Clean up intermediate files ---
-if [ "$KEEP_FILES" = false ]; then
-    echo "Removing intermediate audio file..."
-    rm "$TEMP_AUDIO_FILE"
+echo "Transcription complete."
+
+# --- 3. Simplify using VTT output (requires vtt present) ---
+if [ ! -f "$VTT_FILE" ]; then
+    echo "Expected VTT not found: $VTT_FILE" >&2
+    exit 4
 fi
 
-echo "Done."
+echo "Simplifying VTT -> $SHORT_TXT_FILE ..."
+uv run "/home/kiel/stage/dotemacs/vtt_simplify.py" "$VTT_FILE" | tee "$SHORT_TXT_FILE"
+
+# --- 4. Clean up intermediate files ---
+if [ "$KEEP_FILES" = false ]; then
+    echo "Removing intermediate audio file..."
+    rm -f "$TEMP_AUDIO_FILE"
+fi
+
+echo "Done. Simplified transcript: $SHORT_TXT_FILE"

@@ -99,7 +99,7 @@
     (interactive)
     (slime-indent-and-complete-symbol))
   :config
-  (load (expand-file-name "~/quicklisp/slime-helper.el") 'noerror 'nomessage)
+  ;(load (expand-file-name "~/quicklisp/slime-helper.el") 'noerror 'nomessage)
   (slime-setup '(slime-fancy))
   (setq inferior-lisp-program "sbcl")
   :bind (("<f2>" . slime-eval-defun)
@@ -124,12 +124,19 @@
 
 ;;;; --- 9. Custom Variables and Faces (Managed by Emacs) ---
 (custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(default ((t (:family "fixed" :foundry "misc" :slant normal :weight normal :height 98 :width semi-condensed)))))
 
 (custom-set-variables
- ;; This list is managed by Emacs and contains packages you've installed.
- ;; use-package handles this automatically, so you don't need to manually edit it.
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(cmake-mode company eglot gptel magit markdown-mode orderless paredit savehist slime use-package vertico)))
+   '(cmake-mode company gptel magit markdown-mode orderless paredit slime
+		vertico yaml-mode)))
 
 ;;;; --- End of Emacs Configuration ---

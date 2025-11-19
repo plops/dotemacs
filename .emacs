@@ -50,13 +50,13 @@
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server")))
   (message "Eglot is configured for C/C++ and CMake."))
 
-(use-package company
-  :defer t
-  :hook (after-init . global-company-mode)
-  :config
-  (setq company-idle-delay 0.2)
-  (setq company-minimum-prefix-length 2)
-  (setq company-backends '(company-capf)))
+;; (use-package company
+;;   :defer t
+;;   :hook (after-init . global-company-mode)
+;;   :config
+;;   (setq company-idle-delay 0.2)
+;;   (setq company-minimum-prefix-length 2)
+;;   (setq company-backends '(company-capf)))
 
 (use-package cmake-mode
   :defer t
@@ -111,12 +111,32 @@
   :defer t
   :mode ("\\.md\\'" . markdown-mode))
 
-(use-package gptel
-  :defer t
-  :commands (gptel gptel-send)
-  :config
-  (setq gptel-model "gpt-5-mini" 
-        gptel-backend (gptel-make-gh-copilot "Copilot")))
+;; (use-package gptel
+;;   :defer t
+;;   :commands (gptel gptel-send)
+;;   :config
+;;   (setq gptel-model "gpt-5-mini" 
+;;         gptel-backend (gptel-make-gh-copilot "Copilot")))
+
+
+(use-package copilot
+  :ensure t
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . copilot-accept-completion)
+              ("TAB" . copilot-accept-completion)
+              ("C-TAB" . copilot-accept-completion-by-word)
+              ("C-<tab>" . copilot-accept-completion-by-word)))
+
+;; 1.  **The "Tab" Conflict:** You are using `company` and `copilot` together. Both want the `<tab>` key. The configuration above gives Copilot priority when its ghost text is visible. It often looks messy when both the Company popup and the Copilot ghost text appear simultaneously. Deal with it or disable `company-mode` if you prefer Copilot.
+
+;; 2.  **Activation:**
+;;     After reloading your config (`M-x eval-buffer` or restart), you must run these two commands interactively:
+;;     *   `M-x copilot-install-server` (Downloads the language server).
+;;     *   `M-x copilot-login` (Authenticates with GitHub).
+
+;; 3.  **Node Version:**
+;;     As far as I can tell, the most common failure point is an outdated Node.js version. Verify it in your terminal with `node -v` showing >22 before complaining that it doesn't work. sudo emerge -av net-libs/nodejs ; needs +npm use flag
 
 ;;;; --- 8. Miscellaneous Customizations ---
 ;; Associate .ctl files with scheme-mode

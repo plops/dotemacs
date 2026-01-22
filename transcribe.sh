@@ -88,7 +88,7 @@ fi
 echo "Transcribing audio to text (language: $LANGUAGE)..."
 # The -osrt flag outputs srt; pass the language option from $LANGUAGE.
 # Invoke whisper-cli directly (no eval) and quote args to avoid word-splitting issues.
-"$WHISPER_CLI_PATH" -m "$WHISPER_MODEL_PATH" -l "$LANGUAGE" -osrt -f "$TEMP_AUDIO_FILE" -of "$BASENAME"
+"$WHISPER_CLI_PATH" -m "$WHISPER_MODEL_PATH" -vm /home/kiel/src/whisper.cpp/models/ggml-silero-v6.2.0.bin --vad  -l "$LANGUAGE" -osrt -f "$TEMP_AUDIO_FILE" -of "$BASENAME"
 
 if [ $? -ne 0 ]; then
     echo "Error: whisper.cpp failed to transcribe the audio."

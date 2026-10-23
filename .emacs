@@ -34,6 +34,14 @@
 ;;;; --- 5. Modern Completion Framework: Vertico ---
 (use-package vertico
   :init (vertico-mode))
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+              ("RET" . vertico-directory-enter)
+              ("DEL" . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 (use-package savehist
   :init (savehist-mode 1))
 (use-package orderless

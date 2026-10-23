@@ -127,14 +127,14 @@
 ;;         gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 
-(use-package copilot
-  :ensure t
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("<tab>" . copilot-accept-completion)
-              ("TAB" . copilot-accept-completion)
-              ("C-TAB" . copilot-accept-completion-by-word)
-              ("C-<tab>" . copilot-accept-completion-by-word)))
+;; (use-package copilot
+;;   :ensure t
+;;   :hook (prog-mode . copilot-mode)
+;;   :bind (:map copilot-completion-map
+;;               ("<tab>" . copilot-accept-completion)
+;;               ("TAB" . copilot-accept-completion)
+;;               ("C-TAB" . copilot-accept-completion-by-word)
+;;               ("C-<tab>" . copilot-accept-completion-by-word)))
 
 ;; 1.  **The "Tab" Conflict:** You are using `company` and `copilot` together. Both want the `<tab>` key. The configuration above gives Copilot priority when its ghost text is visible. It often looks messy when both the Company popup and the Copilot ghost text appear simultaneously. Deal with it or disable `company-mode` if you prefer Copilot.
 
@@ -165,6 +165,6 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    '(cmake-mode company gptel magit markdown-mode orderless paredit slime
-		vertico yaml-mode)))
+		yaml-mode)))
 
 ;;;; --- End of Emacs Configuration ---
